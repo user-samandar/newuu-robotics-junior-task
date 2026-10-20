@@ -71,6 +71,20 @@ Every 0.02 s (50 times per second), `deploy_mujoco.py` collects 47 numbers from 
 simulation and gives them to the policy. They describe how the robot's body feels
 right now and what it is asked to do:
 
+| Input | Numbers | Where it comes from |
+|---|---|---|
+| How fast the pelvis is rotating | 3 | `d.qvel[3:6]` (real robot: IMU gyroscope) |
+| Gravity direction seen from the pelvis, i.e. how tilted the robot is | 3 | calculated from the pelvis quaternion `d.qpos[3:7]` (real robot: IMU) |
+| Velocity command: forward, sideways and turning speed | 3 | `cmd_init` in the YAML file (real robot: joystick) |
+| Leg joint angles, measured from the default standing pose | 12 | `d.qpos[7:]` (real robot: joint encoders) |
+| Leg joint speeds | 12 | `d.qvel[6:]` (real robot: joint encoders) |
+| The policy's previous output | 12 | the policy's own last decision |
+| sin and cos of the walking phase (a clock that repeats every 0.8 s) | 2 | simulation time |
+
+3 + 3 + 3 + 12 + 12 + 12 + 2 = 47. Some groups are multiplied by fixed scales from
+the YAML file (`ang_vel_scale`, `cmd_scale`, `dof_vel_scale`), the same scales used
+during training, so the numbers look like what the policy learned on.
+
 The policy gets no camera image and does not know its position in the world. It only
 knows how its own body feels and what command it is given. That is why changing the
 command was enough to make the robot walk in a circle.
